@@ -91,7 +91,12 @@ void ClientManager::UpdateClientData(ISocket& i_socket, const std::vector<char>&
 		{
 		case RawTransferData::MsgType::InvalidateSession:
 		{
-			m_asyncScopedHelper.Push(m_messageQueue, &ClientManager::RemoveClient, this, i_socket);
+			sharedLock.unlock();
+			{
+				std::unique_lock lock(m_mutex);
+				m_asyncScopedHelper.Push(m_messageQueue, &ClientManager::RemoveClient, this, i_socket);
+			}
+			sharedLock.lock();
 		}
 		break;
 		default:
@@ -123,13 +128,13 @@ void ClientManager::Update(float i_elapsed)
 			return false;
 		});
 		m_disconnectedClients.clear();
+		m_asyncScopedHelper.Update();
 	}
 	std::shared_lock sharedLock(m_mutex);
 	std::for_each(m_clients.begin(), m_clients.end(), [i_elapsed](utils::unique_ref<ClientData>& i_clientData)
 	{
 		i_clientData->checkTimer.Update(i_elapsed);
 	});
-	m_asyncScopedHelper.Update();
 }
 
 void ClientManager::OnClientDisconnected(ISocket& i_socket)
