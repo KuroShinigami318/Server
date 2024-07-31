@@ -1,0 +1,24 @@
+{
+"libs": [
+ {
+    "name": "common",
+    "prj_name": "CommonLib",
+    "tag": "v6.0.0"
+ },
+ {
+    "name": "BLog",
+    "prj_name": "BLog",
+    "tag": "master"
+ },
+ {
+    "name": "BSocketLib",
+    "prj_name": "BSocketLib",
+    "tag": "v0.0.0"
+ },
+ {
+    "name": "nlohmannJson",
+    "prj_name": "nlohmannJson",
+    "tag": "v3.11.3"
+ }
+]
+}

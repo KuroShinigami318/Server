@@ -1,0 +1,8 @@
+/libs
+/build
+/Debug
+/Release
+/MinSizeRel
+/RelWithDebInfo
+/build_scripts
+/.vscode
