@@ -22,8 +22,8 @@ AsyncScopedHelper::~AsyncScopedHelper()
 
 void AsyncScopedHelper::CancelTask(utils::async_waitable<void>& task)
 {
-	utils::MessageHandleERR cancelResult = task.Cancel();
-	ASSERT_PLAIN_MSG(cancelResult == utils::MessageHandleERR::SUCCESS, "cancel task failed: {}", cancelResult);
+	utils::MessageHandleStatus cancelResult = task.Cancel();
+	ASSERT_PLAIN_MSG(cancelResult == utils::MessageHandleStatus::SUCCESS, "cancel task failed: {}", cancelResult);
 }
 
 bool AsyncScopedHelper::HasTaskFinished(const utils::async_waitable<void>& i_task)
