@@ -10,7 +10,8 @@ if (POLICY CMP0141)
 endif()
 set(ENV{CMAKE_BUILD_PARALLEL_LEVEL} 8)
 
-project ("Server")
+file(READ ${CMAKE_CURRENT_SOURCE_DIR}/Project This_Project)
+project(${This_Project})
 
 set(CMAKE_CXX_STANDARD 20)
 set(LIBS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libs)
@@ -23,6 +24,7 @@ foreach(IDX RANGE ${total_libs})
     # Get the URL from the current JSON element.
     string(JSON TARGET_LINK_PRJ GET ${LIBS_DEP_JSON} libs ${IDX} prj_name)
     if (NOT TARGET ${TARGET_LINK_PRJ})
+       #set(${TARGET_LINK_PRJ}_PREFER_USE_PREBUILT ON)
        add_subdirectory(${LIBS_DIR}/${CUR_NAME} ${CMAKE_BINARY_DIR}/${CUR_NAME})
     endif()
     list(APPEND TARGETS_LINK_PRJ ${TARGET_LINK_PRJ})
@@ -30,7 +32,10 @@ endforeach()
 
 # Add source to this project's executable.
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+set(INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
+file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS ${INCLUDE_DIR}/*.h ${INCLUDE_DIR}/*.hpp)
+include_directories(${INCLUDE_DIR})
+
 add_executable (${PROJECT_NAME} ${SOURCES})
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
 set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -38,6 +43,11 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
                       RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}/Release
                       RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL ${CMAKE_CURRENT_SOURCE_DIR}/MinSizeRel
                       RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${CMAKE_CURRENT_SOURCE_DIR}/RelWithDebInfo
+)
+target_sources(${PROJECT_NAME} PUBLIC
+    FILE_SET HEADERS
+    BASE_DIRS ${INCLUDE_DIR}
+    FILES ${HEADERS}
 )
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/assets)
 add_custom_target(copy_assets
