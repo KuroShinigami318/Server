@@ -14,14 +14,15 @@ file(READ ${CMAKE_CURRENT_SOURCE_DIR}/Project This_Project)
 project(${This_Project})
 
 set(CMAKE_CXX_STANDARD 20)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/libs_dep.json)
 set(LIBS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libs)
 file(READ ${CMAKE_CURRENT_SOURCE_DIR}/libs_dep.json LIBS_DEP_JSON)
 string(JSON total_libs LENGTH "${LIBS_DEP_JSON}" libs)
 MATH(EXPR total_libs "${total_libs}-1")
 foreach(IDX RANGE ${total_libs})
-    # Get the name from the current JSON element.
+    # Get the name from the current JSON element 'name'.
     string(JSON CUR_NAME GET ${LIBS_DEP_JSON} libs ${IDX} name)
-    # Get the URL from the current JSON element.
+    # Get the URL from the current JSON element 'prj_name'.
     string(JSON TARGET_LINK_PRJ GET ${LIBS_DEP_JSON} libs ${IDX} prj_name)
     if (NOT TARGET ${TARGET_LINK_PRJ})
        #set(${TARGET_LINK_PRJ}_PREFER_USE_PREBUILT ON)
@@ -29,6 +30,7 @@ foreach(IDX RANGE ${total_libs})
     endif()
     list(APPEND TARGETS_LINK_PRJ ${TARGET_LINK_PRJ})
 endforeach()
+endif()
 
 # Add source to this project's executable.
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
@@ -51,13 +53,11 @@ target_sources(${PROJECT_NAME} PUBLIC
 )
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/assets)
 add_custom_target(copy_assets
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_BINARY_DIR}/assets
-)
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_BINARY_DIR}/assets)
 add_dependencies(${PROJECT_NAME} copy_assets)
 # file(COPY assets DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/${CMAKE_BUILD_TYPE})
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/$<CONFIG>/assets
-)
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_SOURCE_DIR}/$<CONFIG>/assets)
 endif()
 foreach(TARGET_LINK_LIB ${TARGETS_LINK_PRJ})
 if (PREBUILT_${TARGET_LINK_LIB})
@@ -66,4 +66,7 @@ set(TARGET_LINK_LIB ${PREBUILT_${TARGET_LINK_LIB}})
 endif()
 target_link_libraries(${PROJECT_NAME} ${TARGET_LINK_LIB})
 endforeach()
+if (USE_PRECOMPILE_HEADERS)
+message("-- reusing precompiled header from CommonLib")
 target_precompile_headers(${PROJECT_NAME} REUSE_FROM CommonLib)
+endif()
