@@ -3,7 +3,7 @@
  {
     "name": "common",
     "prj_name": "CommonLib",
-    "tag": "v6.0.0"
+    "tag": "master"
  },
  {
     "name": "BLog",
@@ -13,7 +13,12 @@
  {
     "name": "BSocketLib",
     "prj_name": "BSocketLib",
-    "tag": "v0.0.0"
+    "tag": "master"
+ },
+ {
+    "name": "NetworkingHelper",
+    "prj_name": "NetworkingHelper",
+    "tag": "master"
  },
  {
     "name": "nlohmannJson",

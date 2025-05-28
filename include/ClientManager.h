@@ -3,7 +3,8 @@
 #include "TimerDelayer.h"
 #include "ISocket.h"
 #include "Log.h"
-#include "networking/RawTransferData.h"
+#include "TransferData.h"
+#include "networking/ReceiverHelper.h"
 #include "networking/SendRawTransferDataError.h"
 
 class ISocket;
@@ -20,19 +21,7 @@ public:
 	void UpdateClientData(ISocket&, const std::vector<char>& i_bytes);
 
 private:
-	struct ClientData
-	{
-		ISocket* socket;
-		utils::TimerDelayer checkTimer;
-		utils::Connection connection;
-		RawTransferData rawData;
-
-		ClientData(ISocket* i_socket, float disconnectTimeout, utils::TimerDelayer::Mode i_mode);
-	};
-
-private:
-	void OnClientDisconnected(ISocket&);
-	template <typename R> requires concept_n::result<std::decay_t<R>>
+	template <typename R> requires utils::concept_n::result<std::decay_t<R>>
 	bool HandleError(R&& o_result)
 	{
 		const std::decay_t<R>& result = std::forward<R>(o_result);
@@ -46,9 +35,8 @@ private:
 
 	const float k_disconnectTimeout = 1800000;
 	utils::MessageSink_mt m_messageQueue;
-	std::vector<utils::unique_ref<ClientData>> m_clients;
-	std::vector<ISocket*> m_disconnectedClients;
 	std::shared_mutex m_mutex;
 	utils::unique_ref<SenderHelper> m_senderHelper;
-	AsyncScopedHelper m_asyncScopedHelper;
+	utils::AsyncScopedHelper m_asyncScopedHelper;
+	ReceiverHelper<CustomTransferData> m_receiverHelper;
 };

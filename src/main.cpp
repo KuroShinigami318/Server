@@ -84,6 +84,7 @@ void ProcessShutdownInput(const std::string& input, SocketReactor& socketReactor
 
 int main(int argc, char** argv)
 {
+	utils::Log::RegisterWriter<utils::Log::DefaultConsoleWriter>();
 	ClientManager clientManager;
 	utils::message_thread inputThread(utils::thread_config("Input Thread"));
 	utils::message_thread updateThread(utils::thread_config("Update Thread"));
