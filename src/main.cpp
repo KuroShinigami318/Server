@@ -82,8 +82,23 @@ void ProcessShutdownInput(const std::string& input, SocketReactor& socketReactor
 	}
 }
 
+struct assert_handler final : default_handler
+{
+	assert_handler() : shouldAssert(false) {}
+	void do_assert(const bool& eval_expr, const char* file, unsigned int line, const char* info) const override
+	{
+		if (shouldAssert)
+		{
+			default_handler::do_assert(eval_expr, file, line, info);
+		}
+	}
+
+	bool shouldAssert;
+};
+
 int main(int argc, char** argv)
 {
+	set_handler(std::make_unique<assert_handler>());
 	utils::Log::RegisterWriter<utils::Log::DefaultConsoleWriter>();
 	ClientManager clientManager;
 	utils::message_thread inputThread(utils::thread_config("Input Thread"));

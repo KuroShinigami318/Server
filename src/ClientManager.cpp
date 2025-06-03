@@ -40,7 +40,8 @@ void ClientManager::UpdateClientData(ISocket& i_socket, const std::vector<char>&
 	ReceiveResult<CustomTransferData> receiveResult = m_receiverHelper.ReceiveRawTransferData(i_socket, i_bytes);
 	if (receiveResult.isErr())
 	{
-		ASSERT_PLAIN_MSG(receiveResult.storage().get<ReceiveRawTransferDataError>().Equals(ReceiveTransferErrorCode::PendingData), "{}", receiveResult.unwrapErr());
+		const bool evaluate = receiveResult.storage().get<ReceiveRawTransferDataError>().Equals(ReceiveTransferErrorCode::PendingData);
+		ASSERT_PLAIN_MSG(evaluate, "{}", receiveResult.unwrapErr());
 		return;
 	}
 
@@ -53,6 +54,17 @@ void ClientManager::UpdateClientData(ISocket& i_socket, const std::vector<char>&
 		{
 			std::unique_lock lock(m_mutex);
 			m_asyncScopedHelper.StartOptionalTask(m_messageQueue, &ClientManager::RemoveClient, this, i_socket);
+		}
+		sharedLock.lock();
+	}
+	break;
+	case TransferData::MsgType::Logging:
+	{
+		sharedLock.unlock();
+		{
+			std::string logMessage{ rawData.msg.begin(), rawData.msg.end() };
+			std::unique_lock lock(m_mutex);
+			std::cout << "Logging: " << logMessage << std::endl;
 		}
 		sharedLock.lock();
 	}

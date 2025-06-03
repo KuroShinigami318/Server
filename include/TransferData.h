@@ -7,7 +7,8 @@ struct CustomTransferData
 public:
 	DeclareScopedEnumImpl(MsgType, size_t,
 		HandShake,
-		InvalidateSession)
+		InvalidateSession,
+		Logging)
 
 	MsgType msgType = MsgType::_COUNT;
 };
