@@ -2,7 +2,11 @@
 #include "ClientManager.h"
 #include "networking/SenderHelper.h"
 
-const long long k_timeoutMs = 500;
+namespace
+{
+constexpr const long long k_timeoutMs = 500;
+constexpr const size_t k_expectedHash = 2892127412644710031;
+}
 
 ClientManager::~ClientManager() = default;
 
@@ -50,12 +54,7 @@ void ClientManager::UpdateClientData(ISocket& i_socket, const std::vector<char>&
 	{
 	case TransferData::MsgType::InvalidateSession:
 	{
-		sharedLock.unlock();
-		{
-			std::unique_lock lock(m_mutex);
-			m_asyncScopedHelper.StartOptionalTask(m_messageQueue, &ClientManager::RemoveClient, this, i_socket);
-		}
-		sharedLock.lock();
+		m_asyncScopedHelper.StartOptionalTask(m_messageQueue, &ClientManager::RemoveClient, this, i_socket);
 	}
 	break;
 	case TransferData::MsgType::Logging:
@@ -66,7 +65,20 @@ void ClientManager::UpdateClientData(ISocket& i_socket, const std::vector<char>&
 			std::unique_lock lock(m_mutex);
 			std::cout << "Logging: " << logMessage << std::endl;
 		}
-		sharedLock.lock();
+	}
+	break;
+	case TransferData::MsgType::VerifyValidation:
+	{
+		sharedLock.unlock();
+		std::string rawFileValidate{ rawData.msg.begin(), rawData.msg.end() };
+		size_t actualHash = 0;
+		hash_combine(actualHash, rawFileValidate);
+		if (actualHash != k_expectedHash)
+		{
+			TransferData sendData;
+			sendData.msgType = TransferData::MsgType::InvalidateSession;
+			m_senderHelper->SendRawTransferData(i_socket, sendData).assertSuccess();
+		}
 	}
 	break;
 	default:
@@ -80,8 +92,4 @@ void ClientManager::UpdateClientData(ISocket& i_socket, const std::vector<char>&
 void ClientManager::Update(float i_elapsed)
 {
 	m_messageQueue.dispatch();
-	{
-		std::unique_lock lock(m_mutex);
-	}
-	std::shared_lock sharedLock(m_mutex);
 }

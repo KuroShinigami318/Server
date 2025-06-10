@@ -8,7 +8,8 @@ public:
 	DeclareScopedEnumImpl(MsgType, size_t,
 		HandShake,
 		InvalidateSession,
-		Logging)
+		Logging,
+		VerifyValidation)
 
 	MsgType msgType = MsgType::_COUNT;
 };
