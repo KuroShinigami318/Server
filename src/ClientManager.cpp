@@ -5,7 +5,7 @@
 namespace
 {
 constexpr const long long k_timeoutMs = 500;
-constexpr const size_t k_expectedHash = 2892127412644710031;
+constexpr const size_t k_expectedHash = 9795657557230408311;
 }
 
 ClientManager::~ClientManager() = default;
@@ -70,15 +70,19 @@ void ClientManager::UpdateClientData(ISocket& i_socket, const std::vector<char>&
 	case TransferData::MsgType::VerifyValidation:
 	{
 		sharedLock.unlock();
+		TransferData sendData;
 		std::string rawFileValidate{ rawData.msg.begin(), rawData.msg.end() };
 		size_t actualHash = 0;
 		hash_combine(actualHash, rawFileValidate);
 		if (actualHash != k_expectedHash)
 		{
-			TransferData sendData;
 			sendData.msgType = TransferData::MsgType::InvalidateSession;
 			m_senderHelper->SendRawTransferData(i_socket, sendData).assertSuccess();
+			ERROR_LOG("Cheat detector", "Found cheater: {}", i_socket.GetNativeSocket());
+			return;
 		}
+		sendData.msgType = TransferData::MsgType::VerifyValidation;
+		m_senderHelper->SendRawTransferData(i_socket, sendData).assertSuccess();
 	}
 	break;
 	default:
