@@ -19,6 +19,7 @@ public:
 	bool HandleAcceptEvent(ISocket& socket) override
 	{
 		m_clientManager.AddClient(socket);
+		INFO_LOG("server info", "connected with {}", socket.GetIPAddress());
 		return true;
 	}
 
@@ -38,7 +39,7 @@ public:
 	bool HandleCloseEvent(ISocket& socket) override
 	{
 		m_clientManager.RemoveClient(socket);
-		INFO_LOG("server info", "disconnected with {}", socket.GetNativeSocket());
+		INFO_LOG("server info", "disconnected with {}", socket.GetIPAddress());
 		return true;
 	}
 
@@ -63,15 +64,6 @@ public:
 
 private:
 	ClientManager& m_clientManager;
-};
-
-class WriteEventHandler : public IWriteEventHandler
-{
-	bool HandleWriteEvent(const size_t& i_bytesSent) override
-	{
-		INFO_LOG("server info", "bytes sent to client {}", i_bytesSent);
-		return true;
-	}
 };
 
 void ProcessShutdownInput(const std::string& input, SocketReactor& socketReactor)
@@ -99,7 +91,6 @@ struct assert_handler final : default_handler
 int main(int argc, char** argv)
 {
 	set_handler(std::make_unique<assert_handler>());
-	utils::Log::RegisterWriter<utils::Log::DefaultConsoleWriter>();
 	ClientManager clientManager;
 	utils::message_thread inputThread(utils::thread_config("Input Thread"));
 	utils::message_thread updateThread(utils::thread_config("Update Thread"));
@@ -134,7 +125,6 @@ int main(int argc, char** argv)
 	socketReactor.RegisterEventHandler(SocketEvent::AcceptConnection, std::make_unique<AcceptEventHandler>(clientManager)).ignoreResult();
 	socketReactor.RegisterEventHandler(SocketEvent::CloseConnection, std::make_unique<CloseConnectionEventHandler>(clientManager)).ignoreResult();
 	socketReactor.RegisterEventHandler(SocketEvent::ReadStream, std::make_unique<ReadEventHandler>(clientManager)).ignoreResult();
-	socketReactor.RegisterEventHandler(SocketEvent::WriteStream, std::make_unique<WriteEventHandler>()).ignoreResult();
 	auto result = socketReactor.Run();
 	if (result.isErr())
 	{

@@ -5,7 +5,6 @@
 namespace
 {
 constexpr const long long k_timeoutMs = 500;
-constexpr const size_t k_expectedHash = 9795657557230408311;
 }
 
 ClientManager::~ClientManager() = default;
@@ -30,12 +29,13 @@ void ClientManager::AddClient(ISocket& i_socket)
 	}
 	catch (const nlohmann::json::exception& e)
 	{
-		ERROR_LOG("Server Error", "Serialize failed! {}", e.what());
+		ERROR_LOG(i_socket.GetIPAddress(), "Serialize failed! {}", e.what());
 	}
 }
 
 void ClientManager::RemoveClient(ISocket& i_socket)
 {
+	std::unique_lock lock(m_mutex);
 }
 
 void ClientManager::UpdateClientData(ISocket& i_socket, const std::vector<char>& i_bytes)
@@ -63,22 +63,30 @@ void ClientManager::UpdateClientData(ISocket& i_socket, const std::vector<char>&
 		{
 			std::string logMessage{ rawData.msg.begin(), rawData.msg.end() };
 			std::unique_lock lock(m_mutex);
-			std::cout << "Logging: " << logMessage << std::endl;
+			INFO_LOG(i_socket.GetIPAddress(), "Logging: {}", logMessage);
 		}
 	}
 	break;
 	case TransferData::MsgType::VerifyValidation:
 	{
-		sharedLock.unlock();
 		TransferData sendData;
 		std::string rawFileValidate{ rawData.msg.begin(), rawData.msg.end() };
 		size_t actualHash = 0;
+		size_t expectedHash = 0;
 		hash_combine(actualHash, rawFileValidate);
-		if (actualHash != k_expectedHash)
+		std::filesystem::path file_path("assets/TaskLooper.h");
+		auto size = std::filesystem::file_size(file_path);
+		std::string expectedRaw(size, '\0');
+		{
+			std::ifstream ifstream(file_path, std::ios::in);
+			ifstream.read(expectedRaw.data(), size);
+		}
+		hash_combine(expectedHash, expectedRaw);
+		if (actualHash != expectedHash)
 		{
 			sendData.msgType = TransferData::MsgType::InvalidateSession;
 			m_senderHelper->SendRawTransferData(i_socket, sendData).assertSuccess();
-			ERROR_LOG("Cheat detector", "Found cheater: {}", i_socket.GetNativeSocket());
+			ERROR_LOG("Cheat detector", "Found cheater: {}", i_socket.GetIPAddress());
 			return;
 		}
 		sendData.msgType = TransferData::MsgType::VerifyValidation;
@@ -87,7 +95,7 @@ void ClientManager::UpdateClientData(ISocket& i_socket, const std::vector<char>&
 	break;
 	default:
 	{
-		ERROR_LOG("Server Error", "Invalid msg type: {}", rawData.msgType);
+		ERROR_LOG(i_socket.GetIPAddress(), "Invalid msg type: {}", rawData.msgType);
 	}
 	break;
 	}
