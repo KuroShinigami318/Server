@@ -1,10 +1,12 @@
 #include "stdafx.h"
 #include "ClientManager.h"
 #include "networking/SenderHelper.h"
+#include "hashing/hashable.h"
 
 namespace
 {
 constexpr const long long k_timeoutMs = 500;
+constexpr const size_t k_expectedHash = 13379945649500584976ull;
 }
 
 ClientManager::~ClientManager() = default;
@@ -71,18 +73,9 @@ void ClientManager::UpdateClientData(ISocket& i_socket, const std::vector<char>&
 	{
 		TransferData sendData;
 		std::string rawFileValidate{ rawData.msg.begin(), rawData.msg.end() };
-		size_t actualHash = 0;
-		size_t expectedHash = 0;
-		hash_combine(actualHash, rawFileValidate);
-		std::filesystem::path file_path("assets/TaskLooper.h");
-		auto size = std::filesystem::file_size(file_path);
-		std::string expectedRaw(size, '\0');
-		{
-			std::ifstream ifstream(file_path, std::ios::in);
-			ifstream.read(expectedRaw.data(), size);
-		}
-		hash_combine(expectedHash, expectedRaw);
-		if (actualHash != expectedHash)
+		size_t actualHash = 0ull;
+		hash_combine(actualHash, rawFileValidate.c_str(), hashing::hashable<const char*>());
+		if (actualHash != k_expectedHash)
 		{
 			sendData.msgType = TransferData::MsgType::InvalidateSession;
 			m_senderHelper->SendRawTransferData(i_socket, sendData).assertSuccess();

@@ -21,6 +21,11 @@
     "tag": "master"
  },
  {
+    "name": "hashing",
+    "prj_name": "hashing",
+    "tag": "master"
+ },
+ {
     "name": "nlohmannJson",
     "prj_name": "nlohmannJson",
     "tag": "v3.11.3"
