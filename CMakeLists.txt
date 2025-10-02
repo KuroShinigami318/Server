@@ -13,6 +13,8 @@ set(ENV{CMAKE_BUILD_PARALLEL_LEVEL} 8)
 file(READ ${CMAKE_CURRENT_SOURCE_DIR}/Project This_Project)
 project(${This_Project})
 
+option(USE_EMBEDDED_SERVER "use embedded server" OFF)
+
 set(CMAKE_CXX_STANDARD 20)
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/libs_dep.json)
 set(LIBS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libs)
@@ -38,7 +40,16 @@ set(INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS ${INCLUDE_DIR}/*.h ${INCLUDE_DIR}/*.hpp)
 include_directories(${INCLUDE_DIR})
 
+if (USE_EMBEDDED_SERVER)
+message("using embedded server...")
+list(FILTER SOURCES EXCLUDE REGEX ".*main.cpp")
+add_library (${PROJECT_NAME} ${SOURCES})
+target_compile_definitions(${PROJECT_NAME} PUBLIC _USE_EMBEDDED_SERVER)
+else()
 add_executable (${PROJECT_NAME} ${SOURCES})
+set_property(TARGET ${PROJECT_NAME} PROPERTY ENABLE_EXPORTS 1)
+endif()
+
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
 set_target_properties(${PROJECT_NAME} PROPERTIES
                       RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}/Debug
